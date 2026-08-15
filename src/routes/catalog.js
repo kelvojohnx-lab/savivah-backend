@@ -7,16 +7,21 @@ const router = express.Router();
 // ---- Public marketplace browsing ----
 router.get("/products", async (req, res) => {
   const { search, category } = req.query;
-  const { rows } = await pool.query(
-    `SELECT p.*, s.name AS store_name, s.verified AS store_verified
-     FROM products p JOIN stores s ON s.id = p.store_id
-     WHERE p.status = 'active'
-       AND ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%')
-       AND ($2::text IS NULL OR p.category = $2)
-     ORDER BY p.is_featured DESC, p.created_at DESC`,
-    [search || null, category || null]
-  );
-  res.json(rows);
+  try {
+    const { rows } = await pool.query(
+      `SELECT p.*, s.name AS store_name, s.verified AS store_verified
+       FROM products p JOIN stores s ON s.id = p.store_id
+       WHERE p.status = 'active'
+         AND ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%')
+         AND ($2::text IS NULL OR p.category = $2)
+       ORDER BY p.is_featured DESC, p.created_at DESC`,
+      [search || null, category || null]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error("GET /products failed:", e.message);
+    res.status(503).json({ error: "Database unavailable. Check DATABASE_URL is set correctly." });
+  }
 });
 
 // ---- Seller: create a store ----
