@@ -3,6 +3,16 @@ const express = require("express");
 const cors = require("cors");
 const escrow = require("./services/escrow");
 
+// Fail fast and loud if critical config is missing, instead of letting routes
+// crash unpredictably later (e.g. a silent unhandled rejection on first login).
+const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET"];
+const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
+if (missing.length > 0) {
+  console.error(`Missing required environment variable(s): ${missing.join(", ")}`);
+  console.error("Set these in your Render service's Environment tab, then redeploy.");
+  process.exit(1);
+}
+
 const authRoutes = require("./routes/auth");
 const catalogRoutes = require("./routes/catalog");
 const paymentRoutes = require("./routes/payments");
