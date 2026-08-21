@@ -44,6 +44,34 @@ development (e.g. an `ngrok` tunnel) — Pesapal cannot reach `localhost`.
    (`POST /api/orders/:id/dispute`), which blocks the sweep from paying the
    seller until an admin resolves it (`POST /api/admin/disputes/:id/resolve`).
 
+## Authentication flow
+
+- **Email/password** — `POST /api/auth/register` and `/api/auth/login`, standard bcrypt + JWT.
+- **Google sign-in** — `POST /api/auth/google` with `{ idToken, role }`. Requires
+  a `GOOGLE_CLIENT_ID` env var (from Google Cloud Console → Credentials →
+  OAuth 2.0 Client ID → Web application). The frontend gets an `idToken` from
+  Google Identity Services and sends it here; the backend verifies it against
+  Google's servers before trusting it.
+- **Admin by default** — any account (email/password or Google) registered
+  with an email ending in `@savivah.co.ke` is automatically given the `admin`
+  role. Everyone else gets `seller` or `customer` based on what they picked at
+  signup. There's no separate admin registration flow — the domain check
+  handles it.
+- Existing database already deployed? Run `migration_google_auth.sql` once
+  against it — this adds Google sign-in support without losing data (fresh
+  installs already have it via `schema.sql`).
+
+## Admin: reviewing sellers and dispatching payouts
+
+- `GET /api/admin/sellers` — every store, its owner, total earned, and how
+  much is currently sitting in escrow for them.
+- `GET /api/admin/payouts?status=pending` — payout records owed to stores
+  (created automatically when `releasePayout()` runs after delivery/dispute
+  resolution).
+- `POST /api/admin/payouts/:id/mark-sent` — after admin manually sends the
+  money via M-Pesa/bank (outside this system — see the "still to wire up"
+  note below), this confirms it in the system and records `sent_at`.
+
 ## Still to wire up for production
 
 - Fargo's real webhook payload shape and signature verification — this repo

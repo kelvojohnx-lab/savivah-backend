@@ -9,11 +9,13 @@ CREATE TABLE users (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name       TEXT NOT NULL,
     email           TEXT UNIQUE NOT NULL,
-    phone_number    TEXT UNIQUE NOT NULL,
-    password_hash   TEXT NOT NULL,
+    phone_number    TEXT UNIQUE,               -- nullable: Google sign-in doesn't provide one
+    password_hash   TEXT,                       -- nullable: Google-only accounts have no password
     role            TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'seller', 'admin')),
     national_id     TEXT,                      -- required before a seller can list products
     kra_pin         TEXT,                      -- required before a seller can receive payouts
+    google_id       TEXT UNIQUE,               -- set when the account signed up/linked via Google
+    avatar_url      TEXT,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
